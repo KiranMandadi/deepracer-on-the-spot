@@ -24,7 +24,7 @@ class AdaptivePIDController(PIDController):
         adaptive_kp = self.kp * (1 + speed / 4.0)
         adaptive_kd = self.kd * (1 + speed / 4.0)
         self.integral += error
-        derivative = error - self.previous_error
+        derivative = error - the previous error
         self.previous_error = error
         return adaptive_kp * error + self.ki * self.integral + adaptive_kd * derivative
 
@@ -62,6 +62,8 @@ def reward_function(params):
     prev_speed = params.get('prev_speed', speed)
     x = params['x']
     y = params['y']
+    prev_x = params.get('x_prev', x)
+    prev_y = params.get('y_prev', y)
 
     reward = 1.0
 
@@ -90,7 +92,7 @@ def reward_function(params):
     if curvature < 0.1:
         optimal_speed = 4.0
     else:
-        optimal_speed = max(2.0, 4.0 - curvature * 8)
+        optimal_speed = max(1.5, 4.0 - curvature * 12)  # More severe reduction in sharp turns
 
     speed_diff = abs(speed - optimal_speed)
     if speed_diff < 0.1:
@@ -101,7 +103,7 @@ def reward_function(params):
         reward += 0.5
 
     if speed > optimal_speed and curvature > 0.1:
-        reward *= 0.5
+        reward *= 0.4  # Increase penalty for excessive speed in turns
 
     SPEED_STABILITY_THRESHOLD = 0.1
     if np.abs(speed - prev_speed) < SPEED_STABILITY_THRESHOLD:
@@ -121,9 +123,9 @@ def reward_function(params):
         if np.any(steering_deltas > OSCILLATION_THRESHOLD):
             reward *= 0.4
 
-    SMOOTH_STEERING_THRESHOLD = 0.2
+    SMOOTH_STEERING_THRESHOLD = 0.15  # Lower threshold for more sensitive reward
     if steering_angle_change < SMOOTH_STEERING_THRESHOLD:
-        reward += 1.5
+        reward += 2.0  # Stronger reward for smooth steering
 
     DIRECTION_THRESHOLD = 2.0
     if direction_diff > DIRECTION_THRESHOLD:
@@ -180,5 +182,17 @@ def reward_function(params):
         reward += MILESTONE_REWARD
     if progress >= 75 and steps < 225:
         reward += MILESTONE_REWARD
+
+    # Reward for covering more distance in fewer steps
+    distance_traveled = np.sqrt((x - prev_x)**2 + (y - prev_y)**2)
+    reward += distance_traveled * 0.1
+
+    # Penalize high steering angles
+    if steering_angle > 15:
+        reward *= 0.8
+    elif steering_angle > 10:
+        reward *= 0.9
+    else:
+        reward += 0.5
 
     return float(reward)
