@@ -23,7 +23,7 @@ class AdaptivePIDController(PIDController):
         adaptive_kp = self.kp * (1 + speed / 4.0)
         adaptive_kd = self.kd * (1 + speed / 4.0)
         self.integral += error
-        derivative = error - the previous error
+        derivative = error - self.previous_error
         self.previous_error = error
         return adaptive_kp * error + self.ki * self.integral + adaptive_kd * derivative
 
