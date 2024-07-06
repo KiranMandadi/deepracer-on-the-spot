@@ -99,9 +99,9 @@ def reward_function(params):
     # Calculate curvature
     curvature = calculate_curvature(waypoints, closest_waypoints)
     if curvature < 0.1:
-        optimal_speed = 3.0
+        optimal_speed = 3.5
     else:
-        optimal_speed = max(1.0, 3.0 - curvature * 10)
+        optimal_speed = max(1.5, 3.5 - curvature * 10)
 
     # Reward for maintaining an optimal speed
     speed_diff = abs(speed - optimal_speed)
