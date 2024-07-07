@@ -5,8 +5,8 @@
       "low": -30.0
     },
     "speed": {
-      "high": 3.5,
-      "low": 1.5
+      "high": 4,
+      "low": 1
     }
   },
   "sensor": ["FRONT_FACING_CAMERA"],

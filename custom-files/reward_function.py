@@ -75,20 +75,14 @@ def reward_function(params):
     if is_offtrack or not all_wheels_on_track:
         return 1e-3
 
-    # Define markers for distance from center
-    marker_1 = 0.1 * track_width
-    marker_2 = 0.2 * track_width
-    marker_3 = 0.3 * track_width
-
-    # Reward staying close to the center line
-    if distance_from_center <= marker_1:
-        reward += 5.0
-    elif distance_from_center <= marker_2:
-        reward += 2.5
-    elif distance_from_center <= marker_3:
-        reward += 1.0
+    # Reward for following the optimal path
+    optimal_path_deviation = calculate_apex_distance(waypoints, closest_waypoints, x, y)
+    if optimal_path_deviation < 0.1 * track_width:
+        reward += 3.0
+    elif optimal_path_deviation < 0.2 * track_width:
+        reward += 1.5
     else:
-        reward *= 0.1
+        reward *= 0.5
 
     # Calculate track direction and direction difference
     next_waypoint = waypoints[closest_waypoints[1]]
@@ -99,7 +93,7 @@ def reward_function(params):
     # Calculate curvature
     curvature = calculate_curvature(waypoints, closest_waypoints)
     if curvature < 0.1:
-        optimal_speed = 3.5
+        optimal_speed = 3.5  # Adjusted for higher speed control
     else:
         optimal_speed = max(1.5, 3.5 - curvature * 10)
 
@@ -127,9 +121,9 @@ def reward_function(params):
         reward *= 0.8
 
     # Penalize for too much steering (to prevent zig-zag behavior)
-    ABS_STEERING_THRESHOLD = 0.3
+    ABS_STEERING_THRESHOLD = 0.2  # More strict threshold for steering
     if steering_angle > ABS_STEERING_THRESHOLD:
-        reward *= 0.3
+        reward *= 0.2
 
     # Penalize for frequent steering changes
     OSCILLATION_THRESHOLD = 0.2
@@ -139,7 +133,7 @@ def reward_function(params):
             reward *= 0.4
 
     # Reward for smooth steering
-    SMOOTH_STEERING_THRESHOLD = 0.15
+    SMOOTH_STEERING_THRESHOLD = 0.1  # Stricter threshold for smooth steering
     if steering_angle_change < SMOOTH_STEERING_THRESHOLD:
         reward += 2.0
 
@@ -147,15 +141,6 @@ def reward_function(params):
     DIRECTION_THRESHOLD = 2.0
     if direction_diff > DIRECTION_THRESHOLD:
         reward *= 0.3
-
-    # Apexing: Reward for being close to the inside edge of the turn (apex)
-    apex_distance = calculate_apex_distance(waypoints, closest_waypoints, x, y)
-    if apex_distance < 0.1 * track_width:
-        reward += 2.0
-    elif apex_distance < 0.2 * track_width:
-        reward += 1.0
-    else:
-        reward *= 0.5
 
     # Look-ahead distance: Reward for maintaining an optimal look-ahead distance
     look_ahead_distance = calculate_look_ahead_distance(waypoints, closest_waypoints, x, y)
@@ -230,5 +215,29 @@ def reward_function(params):
         reward *= 0.9
     else:
         reward += 0.5
+
+    # Advanced complex rewards
+
+    # Penalize for heading deviation
+    HEADING_THRESHOLD = 10.0
+    if direction_diff > HEADING_THRESHOLD:
+        reward *= 0.7
+
+    # Reward for consistent progress without sudden stops
+    if speed > 1.0:
+        reward += 1.0
+
+    # Reward for maintaining higher speeds in straight sections
+    STRAIGHT_SPEED_REWARD = 1.0
+    if curvature < 0.1 and speed > 2.5:
+        reward += STRAIGHT_SPEED_REWARD
+
+    # Penalize for excessive steering angle change over time
+    STEERING_CHANGE_THRESHOLD = 5.0
+    if len(prev_steering_angles) > 1:
+        steering_changes = [abs(prev_steering_angles[i] - prev_steering_angles[i-1]) for i in range(1, len(prev_steering_angles))]
+        avg_steering_change = sum(steering_changes) / len(steering_changes)
+        if avg_steering_change > STEERING_CHANGE_THRESHOLD:
+            reward *= 0.8
 
     return float(reward)
