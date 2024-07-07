@@ -50,6 +50,21 @@ def calculate_look_ahead_distance(waypoints, closest_waypoints, x, y):
     distance_from_look_ahead = np.sqrt((x - look_ahead_point[0])**2 + (y - look_ahead_point[1])**2)
     return distance_from_look_ahead
 
+def calculate_optimal_path_deviation(waypoints, closest_waypoints, x, y):
+    next_waypoint = waypoints[closest_waypoints[1]]
+    prev_waypoint = waypoints[closest_waypoints[0]]
+    path_direction = np.arctan2(next_waypoint[1] - prev_waypoint[1], next_waypoint[0] - prev_waypoint[0])
+    car_direction = np.arctan2(y - prev_waypoint[1], x - prev_waypoint[0])
+    path_deviation = np.abs(path_direction - car_direction)
+    return path_deviation
+
+def dynamic_speed_control(speed, curvature):
+    base_speed = 3.0
+    if curvature < 0.1:
+        return min(base_speed + 0.5, 4.0)
+    else:
+        return max(base_speed - curvature * 10, 2.0)
+
 def reward_function(params):
     track_width = params['track_width']
     distance_from_center = params['distance_from_center']
@@ -73,7 +88,7 @@ def reward_function(params):
     reward = 1.0
 
     # Strong penalty for going off-track
-    if is_offtrack or not all_wheels on_track:
+    if is_offtrack or not all_wheels_on_track:
         return 1e-3
 
     # Encourage following the optimal path using apex and waypoints
@@ -85,12 +100,9 @@ def reward_function(params):
     else:
         reward *= 0.5
 
-    # Calculate curvature and set optimal speed
+    # Calculate curvature and set optimal speed using dynamic speed control
     curvature = calculate_curvature(waypoints, closest_waypoints)
-    if curvature < 0.1:
-        optimal_speed = 3.5
-    else:
-        optimal_speed = max(2.0, 3.5 - curvature * 10)  # Adjusted optimal speed for curves
+    optimal_speed = dynamic_speed_control(speed, curvature)
 
     # Reward for maintaining optimal speed
     speed_diff = abs(speed - optimal_speed)
