@@ -109,9 +109,9 @@ def reward_function(params):
     # Calculate curvature and set optimal speed
     curvature = calculate_curvature(waypoints, closest_waypoints)
     if curvature < 0.1:
-        optimal_speed = 3.5
+        optimal_speed = 4.0
     else:
-        optimal_speed = max(1.0, 3.5 - curvature * 10)  # Reduced optimal speed for curves
+        optimal_speed = max(2.0, 4.0 - curvature * 10)  # Reduced optimal speed for curves
 
     # Reward for maintaining optimal speed
     speed_diff = abs(speed - optimal_speed)
@@ -179,7 +179,7 @@ def reward_function(params):
         reward *= 0.8
 
     # Reward for maximizing speed on straight sections
-    if curvature < 0.1 and speed > 3.0:  # Ensure high speed on straight paths
+    if curvature < 0.1 and speed > 3.5:  # Ensure high speed on straight paths
         reward += 3.0  # Increased reward for high speed on straight paths
 
     # Penalize for unnecessary steering adjustments
@@ -257,7 +257,7 @@ def reward_function(params):
 
     # Reward for maintaining higher speeds in straight sections
     STRAIGHT_SPEED_REWARD = 1.0
-    if curvature < 0.1 and speed > 2.5:
+    if curvature < 0.1 and speed > 3.0:
         reward += STRAIGHT_SPEED_REWARD
 
     # Penalize for excessive steering angle change over time
