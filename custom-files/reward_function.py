@@ -73,10 +73,10 @@ def reward_function(params):
     reward = 1.0
 
     # Strong penalty for going off-track
-    if is_offtrack or not all_wheels_on_track:
+    if is_offtrack or not all_wheels on_track:
         return 1e-3
 
-    # Reward for following the optimal path (using the apex distance)
+    # Encourage following the optimal path using apex and waypoints
     optimal_path_deviation = calculate_apex_distance(waypoints, closest_waypoints, x, y)
     if optimal_path_deviation < 0.1 * track_width:
         reward += 3.0
@@ -85,33 +85,12 @@ def reward_function(params):
     else:
         reward *= 0.5
 
-    # Reward for staying close to the center line (with lower weight than optimal path)
-    marker_1 = 0.1 * track_width
-    marker_2 = 0.2 * track_width
-    if distance_from_center <= marker_1:
-        reward += 1.0
-    elif distance_from_center <= marker_2:
-        reward += 0.5
-    else:
-        reward *= 0.1
-
-    # Calculate track direction and direction difference
-    next_waypoint = waypoints[closest_waypoints[1]]
-    prev_waypoint = waypoints[closest_waypoints[0]]
-    track_direction = np.degrees(np.arctan2(next_waypoint[1] - prev_waypoint[1], next_waypoint[0] - prev_waypoint[0]))
-    direction_diff = np.abs(track_direction - heading)
-
-    # Penalize for large direction differences
-    DIRECTION_THRESHOLD = 10.0
-    if direction_diff > DIRECTION_THRESHOLD:
-        reward *= 0.5
-
     # Calculate curvature and set optimal speed
     curvature = calculate_curvature(waypoints, closest_waypoints)
     if curvature < 0.1:
-        optimal_speed = 4.0
+        optimal_speed = 3.5
     else:
-        optimal_speed = max(2.0, 4.0 - curvature * 10)  # Reduced optimal speed for curves
+        optimal_speed = max(2.0, 3.5 - curvature * 10)  # Adjusted optimal speed for curves
 
     # Reward for maintaining optimal speed
     speed_diff = abs(speed - optimal_speed)
@@ -179,7 +158,7 @@ def reward_function(params):
         reward *= 0.8
 
     # Reward for maximizing speed on straight sections
-    if curvature < 0.1 and speed > 3.5:  # Ensure high speed on straight paths
+    if curvature < 0.1 and speed > 3.0:  # Ensure high speed on straight paths
         reward += 3.0  # Increased reward for high speed on straight paths
 
     # Penalize for unnecessary steering adjustments
@@ -243,29 +222,5 @@ def reward_function(params):
         reward *= 0.9
     else:
         reward += 0.5
-
-    # Advanced complex rewards
-
-    # Penalize for heading deviation
-    HEADING_THRESHOLD = 10.0
-    if direction_diff > HEADING_THRESHOLD:
-        reward *= 0.7
-
-    # Reward for consistent progress without sudden stops
-    if speed > 1.0:
-        reward += 1.0
-
-    # Reward for maintaining higher speeds in straight sections
-    STRAIGHT_SPEED_REWARD = 1.0
-    if curvature < 0.1 and speed > 3.0:
-        reward += STRAIGHT_SPEED_REWARD
-
-    # Penalize for excessive steering angle change over time
-    STEERING_CHANGE_THRESHOLD = 5.0
-    if len(prev_steering_angles) > 1:
-        steering_changes = [abs(prev_steering_angles[i] - prev_steering_angles[i-1]) for i in range(1, len(prev_steering_angles))]
-        avg_steering_change = sum(steering_changes) / len(steering_changes)
-        if avg_steering_change > STEERING_CHANGE_THRESHOLD:
-            reward *= 0.8
 
     return float(reward)
