@@ -169,9 +169,9 @@ def reward_function(params):
     else:
         reward *= 0.8
 
-    # Increased reward for maintaining speed on straight sections
-    if curvature < 0.1 and speed > optimal_speed:
-        reward += 4.0  # Increased reward for high speed on straight paths
+    # Greatly increased reward for maintaining speed on straight sections
+    if curvature < 0.1 and speed > 3.5:  # Ensure high speed on straight paths
+        reward += 5.0  # Greatly increased reward for high speed on straight paths
 
     # Penalize for unnecessary steering adjustments
     if steering_angle_change > 0.3:
