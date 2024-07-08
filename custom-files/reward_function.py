@@ -107,9 +107,9 @@ def reward_function(params):
     # Reward for maintaining optimal speed
     speed_diff = abs(speed - optimal_speed)
     if speed_diff < 0.1:
-        reward += 2.0
+        reward += 3.0  # Increased reward for maintaining optimal speed
     elif speed_diff < 0.2:
-        reward += 1.0
+        reward += 1.5
     else:
         reward += 0.5
 
@@ -120,12 +120,12 @@ def reward_function(params):
     # Reward for smooth speed transitions
     SPEED_STABILITY_THRESHOLD = 0.1
     if np.abs(speed - prev_speed) < SPEED_STABILITY_THRESHOLD:
-        reward += 1.5
+        reward += 2.0  # Increased reward for smooth speed transitions
 
-    # Penalize for excessive braking
+    # Penalize for excessive braking and skidding
     BRAKING_THRESHOLD = 0.3
     if prev_speed - speed > BRAKING_THRESHOLD:
-        reward *= 0.8
+        reward *= 0.6  # Increased penalty for skidding
 
     # Penalize for too much steering (to prevent zig-zag behavior)
     ABS_STEERING_THRESHOLD = 0.15  # More strict threshold for steering
@@ -169,9 +169,9 @@ def reward_function(params):
     else:
         reward *= 0.8
 
-    # Reward for maximizing speed on straight sections
-    if curvature < 0.1 and speed > 3.0:  # Ensure high speed on straight paths
-        reward += 3.0  # Increased reward for high speed on straight paths
+    # Increased reward for maintaining speed on straight sections
+    if curvature < 0.1 and speed > optimal_speed:
+        reward += 4.0  # Increased reward for high speed on straight paths
 
     # Penalize for unnecessary steering adjustments
     if steering_angle_change > 0.3:
