@@ -61,7 +61,9 @@ def calculate_optimal_path_deviation(waypoints, closest_waypoints, x, y):
 def dynamic_speed_control(speed, curvature):
     base_speed = 3.0
     if curvature < 0.1:
-        return min(base_speed + 0.5, 4.0)
+        return min(base_speed + 1.0, 4.0)
+    elif curvature < 0.5:
+        return base_speed
     else:
         return max(base_speed - curvature * 10, 2.0)
 
@@ -94,11 +96,11 @@ def reward_function(params):
     # Encourage following the optimal path using apex and waypoints
     optimal_path_deviation = calculate_apex_distance(waypoints, closest_waypoints, x, y)
     if optimal_path_deviation < 0.1 * track_width:
-        reward += 3.0
+        reward += 5.0  # Increased reward
     elif optimal_path_deviation < 0.2 * track_width:
-        reward += 1.5
+        reward += 2.5  # Increased reward
     else:
-        reward *= 0.5
+        reward *= 0.1  # Increased penalty
 
     # Calculate curvature and set optimal speed using dynamic speed control
     curvature = calculate_curvature(waypoints, closest_waypoints)
@@ -107,25 +109,25 @@ def reward_function(params):
     # Reward for maintaining optimal speed
     speed_diff = abs(speed - optimal_speed)
     if speed_diff < 0.1:
-        reward += 3.0  # Increased reward for maintaining optimal speed
+        reward += 5.0  # Increased reward
     elif speed_diff < 0.2:
-        reward += 1.5
+        reward += 2.5  # Increased reward
     else:
-        reward += 0.5
+        reward += 1.0
 
     # Stronger penalty for going too fast in curves
     if speed > optimal_speed and curvature > 0.1:
-        reward *= 0.2
+        reward *= 0.1  # Increased penalty
 
     # Reward for smooth speed transitions
     SPEED_STABILITY_THRESHOLD = 0.1
     if np.abs(speed - prev_speed) < SPEED_STABILITY_THRESHOLD:
-        reward += 2.0  # Increased reward for smooth speed transitions
+        reward += 3.0  # Increased reward
 
     # Penalize for excessive braking and skidding
-    BRAKING_THRESHOLD = 0.3
+    BRAKING_THRESHOLD = 0.2  # More strict penalty for braking to avoid skidding
     if prev_speed - speed > BRAKING_THRESHOLD:
-        reward *= 0.6  # Increased penalty for skidding
+        reward *= 0.5  # Increased penalty for skidding
 
     # Penalize for too much steering (to prevent zig-zag behavior)
     ABS_STEERING_THRESHOLD = 0.15  # More strict threshold for steering
@@ -147,19 +149,19 @@ def reward_function(params):
     # Reward for smooth steering
     SMOOTH_STEERING_THRESHOLD = 0.05  # Stricter threshold for smooth steering
     if steering_angle_change < SMOOTH_STEERING_THRESHOLD:
-        reward += 2.0
+        reward += 3.0  # Increased reward
 
     # Encourage gradual steering changes
     STEERING_GRADUAL_THRESHOLD = 0.1
     if steering_angle_change < STEERING_GRADUAL_THRESHOLD:
-        reward += 1.0
+        reward += 2.0  # Increased reward
 
     # Reward for consistent steering behavior over multiple steps
     CONSISTENT_STEERING_THRESHOLD = 0.05
     if len(prev_steering_angles) > 2:
         recent_steering_changes = np.abs(np.diff(prev_steering_angles[-3:]))
         if np.all(recent_steering_changes < CONSISTENT_STEERING_THRESHOLD):
-            reward += 1.5
+            reward += 2.5  # Increased reward
 
     # Reward for maintaining an optimal look-ahead distance
     look_ahead_distance = calculate_look_ahead_distance(waypoints, closest_waypoints, x, y)
@@ -171,7 +173,7 @@ def reward_function(params):
 
     # Greatly increased reward for maintaining speed on straight sections
     if curvature < 0.1 and speed > 3.5:  # Ensure high speed on straight paths
-        reward += 5.0  # Greatly increased reward for high speed on straight paths
+        reward += 6.0  # Greatly increased reward for high speed on straight paths
 
     # Penalize for unnecessary steering adjustments
     if steering_angle_change > 0.3:
@@ -181,23 +183,23 @@ def reward_function(params):
     steering_error = steering_angle_change
     pid_correction = adaptive_pid.control(steering_error, speed)
     if abs(pid_correction) < 0.1:  # Stricter threshold for PID correction
-        reward += 2.0
+        reward += 3.0  # Increased reward
 
     # Reward for higher exit speed rather than entry speed
     if steps > 1 and speed > prev_speed:
-        reward += 1.0
+        reward += 2.0  # Increased reward
 
     # Penalize for longer paths (encourage taking the shortest path)
     prev_x, prev_y = waypoints[closest_waypoints[0]]
     distance_traveled = np.sqrt((x - prev_x)**2 + (y - prev_y)**2)
     OPTIMAL_DISTANCE_PER_STEP = 0.4
     if distance_traveled <= OPTIMAL_DISTANCE_PER_STEP:
-        reward += 1.0
+        reward += 1.5  # Increased reward
     else:
-        reward *= 0.8
+        reward *= 0.7  # Increased penalty
 
     # Progress-based reward
-    reward += (progress / 100.0) * 1.5
+    reward += (progress / 100.0) * 2.0  # Increased reward
 
     # Additional reward for completing the track faster
     TOTAL_NUM_STEPS = 300
@@ -209,10 +211,10 @@ def reward_function(params):
     # Reward for consistency in speed
     SPEED_CONSISTENCY_THRESHOLD = 0.1
     if np.abs(speed - prev_speed) < SPEED_CONSISTENCY_THRESHOLD:
-        reward += 1.2
+        reward += 1.5  # Increased reward
 
     # Incremental Progress Reward
-    reward += (progress / 100.0) * 2.0
+    reward += (progress / 100.0) * 2.5  # Increased reward
 
     # Time-based milestones
     MILESTONE_REWARD = 5.0
