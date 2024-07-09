@@ -59,7 +59,7 @@ def calculate_optimal_path_deviation(waypoints, closest_waypoints, x, y):
     return path_deviation
 
 def dynamic_speed_control(speed, curvature):
-    base_speed = 3.0
+    base_speed = 3.5
     if curvature < 0.1:
         return min(base_speed + 1.0, 4.0)
     elif curvature < 0.5:
@@ -139,7 +139,7 @@ def reward_function(params):
     if len(prev_steering_angles) > 1:
         steering_deltas = np.abs(np.diff(prev_steering_angles[-5:]))
         if np.any(steering_deltas > OSCILLATION_THRESHOLD):
-            reward *= 0.4
+            reward *= 0.2  # Increased penalty for oscillation
 
     # Penalize absolute steering changes within a short time window
     SHORT_TIME_WINDOW = 0.2  # 0.2 seconds
@@ -149,19 +149,19 @@ def reward_function(params):
     # Reward for smooth steering
     SMOOTH_STEERING_THRESHOLD = 0.05  # Stricter threshold for smooth steering
     if steering_angle_change < SMOOTH_STEERING_THRESHOLD:
-        reward += 3.0  # Increased reward
+        reward += 3.0
 
     # Encourage gradual steering changes
     STEERING_GRADUAL_THRESHOLD = 0.1
     if steering_angle_change < STEERING_GRADUAL_THRESHOLD:
-        reward += 2.0  # Increased reward
+        reward += 2.0
 
     # Reward for consistent steering behavior over multiple steps
     CONSISTENT_STEERING_THRESHOLD = 0.05
     if len(prev_steering_angles) > 2:
         recent_steering_changes = np.abs(np.diff(prev_steering_angles[-3:]))
         if np.all(recent_steering_changes < CONSISTENT_STEERING_THRESHOLD):
-            reward += 2.5  # Increased reward
+            reward += 2.5
 
     # Reward for maintaining an optimal look-ahead distance
     look_ahead_distance = calculate_look_ahead_distance(waypoints, closest_waypoints, x, y)
@@ -173,7 +173,7 @@ def reward_function(params):
 
     # Greatly increased reward for maintaining speed on straight sections
     if curvature < 0.1 and speed > 3.5:  # Ensure high speed on straight paths
-        reward += 6.0  # Greatly increased reward for high speed on straight paths
+        reward += 10.0  # Greatly increased reward for high speed on straight paths
 
     # Penalize for unnecessary steering adjustments
     if steering_angle_change > 0.3:
@@ -183,23 +183,23 @@ def reward_function(params):
     steering_error = steering_angle_change
     pid_correction = adaptive_pid.control(steering_error, speed)
     if abs(pid_correction) < 0.1:  # Stricter threshold for PID correction
-        reward += 3.0  # Increased reward
+        reward += 3.0
 
     # Reward for higher exit speed rather than entry speed
     if steps > 1 and speed > prev_speed:
-        reward += 2.0  # Increased reward
+        reward += 2.0
 
     # Penalize for longer paths (encourage taking the shortest path)
     prev_x, prev_y = waypoints[closest_waypoints[0]]
     distance_traveled = np.sqrt((x - prev_x)**2 + (y - prev_y)**2)
     OPTIMAL_DISTANCE_PER_STEP = 0.4
     if distance_traveled <= OPTIMAL_DISTANCE_PER_STEP:
-        reward += 1.5  # Increased reward
+        reward += 1.5
     else:
-        reward *= 0.7  # Increased penalty
+        reward *= 0.7
 
     # Progress-based reward
-    reward += (progress / 100.0) * 2.0  # Increased reward
+    reward += (progress / 100.0) * 2.0
 
     # Additional reward for completing the track faster
     TOTAL_NUM_STEPS = 300
@@ -211,10 +211,10 @@ def reward_function(params):
     # Reward for consistency in speed
     SPEED_CONSISTENCY_THRESHOLD = 0.1
     if np.abs(speed - prev_speed) < SPEED_CONSISTENCY_THRESHOLD:
-        reward += 1.5  # Increased reward
+        reward += 1.5
 
     # Incremental Progress Reward
-    reward += (progress / 100.0) * 2.5  # Increased reward
+    reward += (progress / 100.0) * 2.5
 
     # Time-based milestones
     MILESTONE_REWARD = 5.0
