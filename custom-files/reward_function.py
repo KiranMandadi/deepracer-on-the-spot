@@ -65,7 +65,7 @@ def dynamic_speed_control(speed, curvature):
     elif curvature < 0.5:
         return base_speed
     else:
-        return max(1.0, 2.0 - curvature * 10)  # Ensure significant slowdown for sharp curves
+        return max(1.0, 1.5 - curvature * 10)  # Ensure significant slowdown for sharp curves
 
 def reward_function(params):
     track_width = params['track_width']
