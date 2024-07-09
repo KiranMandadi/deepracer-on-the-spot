@@ -65,7 +65,7 @@ def dynamic_speed_control(speed, curvature):
     elif curvature < 0.5:
         return base_speed
     else:
-        return max(base_speed - curvature * 10, 2.0)
+        return max(1.5, 1.0 + curvature)
 
 def reward_function(params):
     track_width = params['track_width']
